@@ -1,86 +1,139 @@
-import heapq #Permite usar una cola de prioridad
-import networkx as nx #networkx trabaja con gráficos
-import matplotlib.pyplot as plt # Para mostrar el gráfico
+# Importamos bibliotecas necesarias
+import heapq  # Para implementar la cola de prioridad (mínima)
+import networkx as nx  # Para trabajar con grafos dirigidos y visualización
+import matplotlib.pyplot as plt  # Para mostrar gráficamente el grafo
 
-# ------------------------
-# Dijkstra paso a paso
-# ------------------------
+# Función: Algoritmo de Dijkstra entre nodo origen y destino
 
-def dijkstra(grafo, inicio): #grafo: Diccionario que representa las conexiones (rutas) entre nosdos 
-    #inicio: el nodo desde donde empieza el cálculo (BODEGA CENTRAL)
+def dijkstra_ruta(grafo, inicio, destino):
     """
-    Algoritmo de Dijkstra con salida paso a paso en consola.
-    grafo: diccionario de adyacencia con pesos.
-    inicio: nodo de inicio.
+    Encuentra la ruta más corta entre 'inicio' y 'destino' en un grafo ponderado.
+    Retorna la ruta como lista de nodos y la distancia total.
     """
-    distancias = {nodo: float('inf') for nodo in grafo} #crea un diccionario distancias, con cada nodo infinito, que después se irá actulizando
-    distancias[inicio] = 0 # Ka distancia del nodo de inicio a sí mismo se establece en 0
-    visitados = set() # para llevar el control de los nodos que ya se procesaron
-    cola = [(0, inicio)] #Una cola de prioridad donde se guardan nodos con su distancia real mínima.
 
-    print(f"\n🟢 Inicio desde: {inicio}")
-    print("-" * 50)
+    # Inicializamos las distancias a infinito para todos los nodos
+    distancias = {nodo: float('inf') for nodo in grafo}
 
-    while cola: #Mientras haya nudos en la cola, saca el nudo con la menor distancia conocida
+    # La distancia al nodo de inicio es cero
+    distancias[inicio] = 0
+
+    # Diccionario para reconstruir el camino más corto (predecesores)
+    predecesores = {nodo: None for nodo in grafo}
+
+    # Conjunto de nodos ya visitados
+    visitados = set()
+
+    # Cola de prioridad que guarda (distancia, nodo)
+    cola = [(0, inicio)]
+
+    # Bucle principal del algoritmo
+    while cola:
+        # Sacamos el nodo con la menor distancia conocida
         distancia_actual, nodo_actual = heapq.heappop(cola)
 
-        if nodo_actual in visitados: # Si ya se ha visitado ese nudo, se salta. 
+        # Si ya fue visitado, lo ignoramos
+        if nodo_actual in visitados:
             continue
 
-        print(f"Visitando: {nodo_actual}") #Muestra en consola que nodo se esta evaluando y su distancia real mínima. Se marca como visitado para no repetirlo.
-        print(f"Distancia actual mínima: {distancia_actual}")
+        # Marcamos el nodo como visitado
         visitados.add(nodo_actual)
 
-        for vecino, peso in grafo[nodo_actual].items(): #Se itera sobre los vecinos directores del nodo actual, pero es la distancia entre el nodo actual y su vecino.
+        # Recorremos todos los vecinos del nodo actual
+        for vecino, peso in grafo[nodo_actual].items():
+            # Calculamos la nueva distancia hasta ese vecino
             nueva_distancia = distancia_actual + peso
-            if nueva_distancia < distancias[vecino]: #Si se encuntra una mejor ruta, se actualiza la distancia.
-                distancias[vecino] = nueva_distancia
-                heapq.heappush(cola, (nueva_distancia, vecino))
-                print(f"  ↳ Actualizando distancia de {vecino} a {nueva_distancia}")
 
-    print("\n✅ Resultado Final:") #Se imprimen las distancias más cortas desde el nodo de inicio a todos los demás. 
-    for nodo, distancia in distancias.items():
-        print(f"Distancia mínima a {nodo}: {distancia} km")
+            # Si encontramos una mejor ruta, actualizamos
+            if nueva_distancia < distancias[vecino]:
+                distancias[vecino] = nueva_distancia       # Actualizamos distancia mínima
+                predecesores[vecino] = nodo_actual         # Guardamos el nodo anterior
+                heapq.heappush(cola, (nueva_distancia, vecino))  # Agregamos vecino a la cola
 
-    return distancias
+  
+    # Reconstrucción del camino desde destino al origen
 
-# ------------------------
-# Visualización gráfica
-# ------------------------
+    camino = []  # Lista vacía para guardar el camino más corto
+    actual = destino
 
-def graficar_rutas(grafo): #Representa las rutas.
+    # Retrocedemos desde el destino hasta el origen
+    while actual is not None:
+        camino.insert(0, actual)  # Insertamos al principio para que el orden sea correcto
+        actual = predecesores[actual]  # Avanzamos al nodo anterior
+
+    # Si la distancia sigue siendo infinita, no hay camino
+    if distancias[destino] == float('inf'):
+        print(f"No existe una ruta de {inicio} a {destino}")
+        return None, None
+
+    # Mostramos el resultado en consola
+    print(f"\n Ruta más corta desde {inicio} a {destino}")
+    print(f"Distancia total: {distancias[destino]} km")
+    print(f"Ruta: {' → '.join(camino)}")
+
+    return camino, distancias[destino]  # Devolvemos la ruta y su distancia
+
+
+# Función: Visualización del grafo con ruta resaltada
+
+def graficar_ruta(grafo, ruta_destacada=None):
     """
-    Muestra un grafo visual con pesos.
+    Visualiza el grafo y resalta una ruta específica en rojo si se proporciona.
     """
-    G = nx.DiGraph()
 
-    # Agrega los nodos y aristas con pesos
-    for origen in grafo: #rrecorre el diccionario del grafo y añade cada ruta como arista con su peso.
+    G = nx.DiGraph()  # Creamos un grafo dirigido
+
+    # Agregamos nodos y aristas con sus pesos al grafo
+    for origen in grafo:
         for destino, peso in grafo[origen].items():
-            G.add_edge(origen, destino, weight=peso)
+            G.add_edge(origen, destino, weight=peso)  # Creamos arista con peso
 
-    pos = nx.spring_layout(G, seed=42) #posiciona los nodos automaticamente de forma visualmente clara. Dibuja el grafo con etiquetas y flechas, mostrando los pesos de las rutas.
-    nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=2000, font_weight='bold', arrows=True)
-    etiquetas = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas)
+    # Posiciones de los nodos para una visualización ordenada
+    pos = nx.spring_layout(G, seed=42)
 
-    plt.title("Rutas logísticas de montacargas") #Muestra la gráfica con un titulo
-    plt.show()
+    # Obtenemos etiquetas de peso de las aristas
+    edge_labels = nx.get_edge_attributes(G, 'weight')
 
-# ------------------------
-# Ejemplo adaptado: Empresa de montacargas
-# ------------------------
+    # Colores de las aristas: gris por defecto, rojo si es parte de la ruta más corta
+    edge_colors = []
+    for u, v in G.edges():
+        if ruta_destacada and (u, v) in zip(ruta_destacada, ruta_destacada[1:]):
+            edge_colors.append('red')  # Arista pertenece a la ruta más corta
+        else:
+            edge_colors.append('gray')  # Arista normal
+
+    # Dibujamos el grafo con nodos
+    nx.draw(G, pos, with_labels=True,
+            node_color='lightblue', node_size=2000,
+            font_weight='bold', arrows=True)
+
+    # Dibujamos las etiquetas de los pesos
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+
+    # Dibujamos las aristas con los colores definidos
+    nx.draw_networkx_edges(G, pos, edge_color=edge_colors, width=3)
+
+    # Título del gráfico
+    plt.title("Ruta más corta resaltada")
+    plt.show()  # Mostramos la visualización
+
+# Definimos el grafo de ejemplo: Rutas logísticas
 
 grafo_montacargas = {
     'BODEGA_CENTRAL': {'CLIENTE_1': 12, 'SUCURSAL_NORTE': 15},
     'CLIENTE_1': {'CLIENTE_2': 8},
     'SUCURSAL_NORTE': {'CLIENTE_3': 7},
     'CLIENTE_2': {'CLIENTE_3': 5},
-    'CLIENTE_3': {}
-} #Este representa los puntos geográficos #Los valores son distancias(pueden ser Km, timepo o incluso costos.)
+    'CLIENTE_3': {}  # Nodo final sin salidas
+}
 
-# Ejecutar algoritmo
-resultado = dijkstra(grafo_montacargas, 'BODEGA_CENTRAL')
-#Se llama la algoritmo desde BODEGA_CENTRAL y muestra la gráfica
-# Mostrar grafo visual
-graficar_rutas(grafo_montacargas)
+# Entrada fija: Puedes cambiar el origen y destino aquí
+
+origen = 'BODEGA_CENTRAL'  # Nodo de inicio
+destino = 'CLIENTE_3'      # Nodo de destino
+
+# Ejecutamos Dijkstra para encontrar la ruta más corta
+camino, distancia_total = dijkstra_ruta(grafo_montacargas, origen, destino)
+
+# Si se encontró camino, lo graficamos
+if camino:
+    graficar_ruta(grafo_montacargas, camino)
