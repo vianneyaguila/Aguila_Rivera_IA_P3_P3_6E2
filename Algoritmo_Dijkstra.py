@@ -27,7 +27,7 @@ def dijkstra(grafo, inicio): #grafo: Diccionario que representa las conexiones (
         if nodo_actual in visitados: # Si ya se ha visitado ese nudo, se salta. 
             continue
 
-        print(f"🚩 Visitando: {nodo_actual}") #Muestra en consola que nodo se esta evaluando y su distancia real mínima. Se marca como visitado para no repetirlo.
+        print(f"Visitando: {nodo_actual}") #Muestra en consola que nodo se esta evaluando y su distancia real mínima. Se marca como visitado para no repetirlo.
         print(f"Distancia actual mínima: {distancia_actual}")
         visitados.add(nodo_actual)
 
@@ -64,7 +64,7 @@ def graficar_rutas(grafo): #Representa las rutas.
     etiquetas = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=etiquetas)
 
-    plt.title("📍 Rutas logísticas de montacargas") #Muestra la gráfica con un titulo
+    plt.title("Rutas logísticas de montacargas") #Muestra la gráfica con un titulo
     plt.show()
 
 # ------------------------
